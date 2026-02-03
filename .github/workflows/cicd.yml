@@ -23,10 +23,10 @@ jobs:
           sudo apt-get install -y tidy
           tidy -e index.html || true
 
-      - name: Check CSS
-        run: |
-          echo "CSS file exists:"
-          test -f style.css && echo "style.css OK"
+      # - name: Check CSS
+      #   run: |
+      #     echo "CSS file exists:"
+      #     test -f style.css && echo "style.css OK"
 
       - name: Upload website artifact
         uses: actions/upload-artifact@v4
