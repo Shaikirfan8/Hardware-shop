@@ -1,38 +1,44 @@
-name: Hardware Shop CI/CD Pipeline
+name: Deploy to Cloud Run
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+
+env:
+  SERVICE_NAME: hardware-shop
+  REGION: ${{ secrets.GCP_REGION }}
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  IMAGE: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/hardware-repo/hardware-shop
 
 jobs:
-  build:
-    name: Build & Validate Website
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate HTML
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y tidy
-          tidy -e index.html || true
-
-      # - name: Check CSS
-      #   run: |
-      #     echo "CSS file exists:"
-      #     test -f style.css && echo "style.css OK"
-
-      - name: Upload website artifact
-        uses: actions/upload-artifact@v4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          name: website-files
-          path: |
-            index.html
-            style.css
-            images/
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
+
+      - name: Build Docker image
+        run: |
+          docker build -t $IMAGE .
+
+      - name: Push Docker image
+        run: |
+          docker push $IMAGE
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE_NAME --image $IMAGE --region $REGION --platform managed --allow-unauthenticated
