@@ -1,0 +1,38 @@
+name: Hardware Shop CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build & Validate Website
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate HTML
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tidy
+          tidy -e index.html || true
+
+      - name: Check CSS
+        run: |
+          echo "CSS file exists:"
+          test -f style.css && echo "style.css OK"
+
+      - name: Upload website artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-files
+          path: |
+            index.html
+            style.css
+            images/
